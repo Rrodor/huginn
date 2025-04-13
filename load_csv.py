@@ -2,7 +2,7 @@ import pandas as pd
 
 
 def load(path: str) -> pd.DataFrame:
-    """Load dataset from csv file."""
+
     try:
         data = pd.read_csv(path)
     except FileNotFoundError:
