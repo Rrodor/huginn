@@ -70,7 +70,6 @@ def get_legi_data():
                 print(colored_text("[HUGENOTE]:", "yellow"), "Circonscription number cannot be empty.")
                 continue
                 
-            # Basic validation
             if not (departement_number.isdigit() or (departement_number.startswith('0') and departement_number[1:].isdigit())):
                 print(colored_text("[HUGENOTE]:", "yellow"), "Le numéro de département doit être un nombre.")
                 continue
@@ -127,16 +126,16 @@ def get_legi_data():
                 else:
                     break
             except (ValueError, IndexError) as e:
-                print(colored_text("[HUGENOTE]:", "yellow"), f"Warning: Could not process candidate data at index {i}: {e}")
+                print(colored_text("[HUGENOTE]:", "red"), f"Warning: Could not process candidate data at index {i}: {e}")
                 continue
 
         if not candidats:
-            print(colored_text("[HUGENOTE]:", "yellow"), "No candidate data found for this circonscription.")
+            print(colored_text("[HUGENOTE]:", "blue"), "No candidate data found for this circonscription.")
             return
 
         candidats.sort(key=lambda x: x.voix, reverse=True)
 
-        print(f"\n{colored_text('[HUGENOTE]:', 'yellow')} Results for Department {departement_number}, Circonscription {circonscription_number}:")
+        print(f"\n{colored_text('[HUGENOTE]:', 'green')} Results for Department {departement_number}, Circonscription {circonscription_number}:")
         print("-" * 60)
         for i, candidat in enumerate(candidats):
             elected_status = " (ÉLU)" if candidat.elu else ""
@@ -144,42 +143,36 @@ def get_legi_data():
         print("-" * 60)
 
     except Exception as e:
-        print(colored_text("[HUGENOTE]:", "yellow"), f"Error processing data: {e}")
+        print(colored_text("[HUGENOTE]:", "red"), f"Error processing data: {e}")
 
 #===========================================================#
 #                ELECTION MANAGER                           #
 #===========================================================#
 
 def handle_legi_output():
-    """
-    Handle the legislative elections workflow:
-    - Get year input
-    - Get round input
-    - Fetch data from data.gouv.fr
-    - Process and display results
-    """
     try:
         # ASK FOR YEAR (TO UPDATE AND IMPROVE)
-        # Let the user choose any year, if it's not matching any election date, ask him for the closest next election.
+        # Handle the election between 1958 and 2012.
+        # Let the user choose any year, if it's not matching any election date, ask him for the closest next/previous election.
         while True:
-            year_input = hugenote_prompt("Which year are you looking for? (2017, 2022)")
-            if year_input in ['2017', '2022']:
+            year_input = hugenote_prompt("Which year are you looking for?")
+            if year_input in ['2024']:
                 break
             else:
-                print(colored_text("[HUGENOTE]:", "yellow"), "Invalid year. Currently only 2017 and 2022 are supported.")
+                print(colored_text("[HUGENOTE]:", "blue"), "Invalid year. Currently only 2017 and 2022 are supported.")
 
         while True:
-            round_input = hugenote_prompt("Which round are you looking for? (1 or 2)")
-            if round_input in ['1', '2']:
+            turn_input = hugenote_prompt("Which turn are you looking for? (1 or 2)")
+            if turn_input in ['1', '2']:
                 break
             else:
-                print(colored_text("[HUGENOTE]:", "yellow"), "Invalid round number. Please enter 1 or 2.")
+                print(colored_text("[HUGENOTE]:", "blue"), "Invalid round number. Please enter 1 or 2.")
 
-        print(colored_text("[HUGENOTE]:", "yellow"), "Fetching data from data.gouv.fr...")
-        get_data_from_gouv("test", round_input)
+        print(colored_text("[HUGENOTE]:", "green"), "Fetching data from data.gouv.fr...")
+        get_data_from_gouv("test", turn_input)
         get_legi_data()
     except Exception as e:
-        print(colored_text("[HUGENOTE]:", "yellow"), f"Error processing legislative election data: {e}")
+        print(colored_text("[HUGENOTE]:", "red"), f"Error processing legislative election data: {e}")
 
 #===========================================================#
 #                MAIN                                       #
@@ -195,10 +188,10 @@ def main():
             try:
                 os.remove("test.csv")
             except PermissionError:
-                print(colored_text("[HUGENOTE]:", "yellow"), "Error: Could not delete existing data file (permission denied).")
+                print(colored_text("[HUGENOTE]:", "red"), "Error: Could not delete existing data file (permission denied).")
                 return
             except Exception as e:
-                print(colored_text("[HUGENOTE]:", "yellow"), f"Error deleting existing data file: {e}")
+                print(colored_text("[HUGENOTE]:", "red"), f"Error deleting existing data file: {e}")
                 return
 
         # ASK FOR ELECTION TYPE
@@ -209,13 +202,13 @@ def main():
                 handle_legi_output()
                 break
             else:
-                print(colored_text("[HUGENOTE]:", "yellow"), "Sorry, only 'legi' (legislative elections) is currently supported.")
+                print(colored_text("[HUGENOTE]:", "blue"), "Sorry, only 'legi' (legislative elections) is currently supported.")
             
     except KeyboardInterrupt:
-        print(f"\n{colored_text('[HUGENOTE]:', 'yellow')} Program terminated by user.")
+        print(f"\n{colored_text('[HUGENOTE]:', 'green')} Program terminated by user.")
         sys.exit(0)
     except Exception as e:
-        print(colored_text("[HUGENOTE]:", "yellow"), f"An unexpected error occurred: {e}")
+        print(colored_text("[HUGENOTE]:", "red"), f"An unexpected error occurred: {e}")
 
 
 if __name__ == "__main__":
