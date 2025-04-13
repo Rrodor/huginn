@@ -5,18 +5,9 @@ import os
 import re
 import shutil
 from loguru import logger
+from utils import colored_text, hugenote_prompt
 from load_csv import load
 from io import BytesIO
-
-def colored_text(text, color):
-    colors = {
-        'yellow': '\033[93m',
-        'green': '\033[92m',
-        'red': '\033[91m',
-        'blue': '\033[94m',
-        'reset': '\033[0m'
-    }
-    return f"{colors.get(color, '')}{text}{colors['reset']}"
 
 def get_RID(dataset_name: str, election_type: str, year: str) -> str:
 
@@ -26,7 +17,6 @@ def get_RID(dataset_name: str, election_type: str, year: str) -> str:
         else:
             print(colored_text("[HUGENOTE]:", "red"), "Only year between 1958 and 2012 are available in this version")
             return None
-
     # LEGISLATIVE ELECTION 2024
     # if round_number == '2':
     #     return "41ed46cd-77c2-4ecc-b8eb-374aa953ca39"
