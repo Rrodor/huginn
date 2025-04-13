@@ -21,7 +21,7 @@ def colored_text(text, color):
 
 def hugenote_prompt(message):
     prefix = colored_text("[HUGENOTE]:", "yellow")
-    return input(f"{prefix} {message}\nPlease, type your answer... ").strip()
+    return input(f"{prefix} {message}\n>>> ").strip()
 
 def display_header():
     header = """
@@ -55,27 +55,27 @@ def get_legi_data():
         print(colored_text("[HUGENOTE]:", "yellow"), "Error: Data file not found. Please try again.")
         return
     except Exception as e:
-        print(colored_text("[HUGENOTE]:", "yellow"), f"Error loading data: {e}")
+        print(colored_text("[HUGENOTE]:", "red"), f"Error loading data: {e}")
         return
 
     while True:
         try:
-            departement_number = hugenote_prompt("Quel departement ? (ex: 75, 01, 971)")
+            departement_number = hugenote_prompt("Which departement? (example: 75, 01, 971)")
             if not departement_number:
-                print(colored_text("[HUGENOTE]:", "yellow"), "Department number cannot be empty.")
+                print(colored_text("[HUGENOTE]:", "red"), "Department number cannot be empty.")
                 continue
                 
-            circonscription_number = hugenote_prompt("Quelle circonscription ?")
+            circonscription_number = hugenote_prompt("Which district? (example: 01, 03, 11)")
             if not circonscription_number:
-                print(colored_text("[HUGENOTE]:", "yellow"), "Circonscription number cannot be empty.")
+                print(colored_text("[HUGENOTE]:", "red"), "District number cannot be empty.")
                 continue
                 
             if not (departement_number.isdigit() or (departement_number.startswith('0') and departement_number[1:].isdigit())):
-                print(colored_text("[HUGENOTE]:", "yellow"), "Le numéro de département doit être un nombre.")
+                print(colored_text("[HUGENOTE]:", "red"), "Departement must be a number")
                 continue
                 
             if not circonscription_number.isdigit():
-                print(colored_text("[HUGENOTE]:", "yellow"), "Le numéro de circonscription doit être un nombre.")
+                print(colored_text("[HUGENOTE]:", "red"), "District must be a number")
                 continue
                 
             code_circo = departement_number + circonscription_number
@@ -130,7 +130,7 @@ def get_legi_data():
                 continue
 
         if not candidats:
-            print(colored_text("[HUGENOTE]:", "blue"), "No candidate data found for this circonscription.")
+            print(colored_text("[HUGENOTE]:", "red"), "No candidate data found for this circonscription.")
             return
 
         candidats.sort(key=lambda x: x.voix, reverse=True)
@@ -151,26 +151,39 @@ def get_legi_data():
 
 def handle_legi_output():
     try:
+
         # ASK FOR YEAR (TO UPDATE AND IMPROVE)
         # Handle the election between 1958 and 2012.
         # Let the user choose any year, if it's not matching any election date, ask him for the closest next/previous election.
         while True:
             year_input = hugenote_prompt("Which year are you looking for?")
-            if year_input in ['2024']:
+            if year_input.isdigit() and year_input in ['1958', '1962', '1967', '1968', '1973', '1978', '1981', '1986', '1988', '1993', '1997', '2002', '2007', '2012']:
                 break
             else:
-                print(colored_text("[HUGENOTE]:", "blue"), "Invalid year. Currently only 2017 and 2022 are supported.")
+                print(colored_text("[HUGENOTE]:", "red"), "Invalid year. Try '1958', '1962', '1967', '1968', '1973', '1978', '1981', '1986', '1988', '1993', '1997', '2002', '2007', '2012'")
 
+        # ASK FOR TYPE OF DATA NEEDED
+        # Add 'nation' to type input when the database is setup.
         while True:
-            turn_input = hugenote_prompt("Which turn are you looking for? (1 or 2)")
-            if turn_input in ['1', '2']:
+            type_input = hugenote_prompt("Which data are you looking for? (for this version, only 'district' is supported)")
+            if type_input in ['district']:
                 break
             else:
-                print(colored_text("[HUGENOTE]:", "blue"), "Invalid round number. Please enter 1 or 2.")
+                print(colored_text("[HUGENOTE]:", "red"), "Invalid input, please enter 'district' the vizualize the outcome of an election round.")
 
-        print(colored_text("[HUGENOTE]:", "green"), "Fetching data from data.gouv.fr...")
-        get_data_from_gouv("test", turn_input)
-        get_legi_data()
+        # FETCH LEGI DATA
+        print(colored_text("[HUGENOTE]:", "blue"), "Fetching legislative election data from data.gouv.fr...")
+        if (get_data_from_gouv("test", type_input, year_input)):
+            print(colored_text("[HUGENOTE]:", "Blue"), "Processing data...")
+
+        # while True:
+        #     turn_input = hugenote_prompt("Which turn are you looking for? (1 or 2)")
+        #     if turn_input in ['1', '2']:
+        #         break
+        #     else:
+        #         print(colored_text("[HUGENOTE]:", "red"), "Invalid round number. Please enter 1 or 2.")
+
+        # get_legi_data()
     except Exception as e:
         print(colored_text("[HUGENOTE]:", "red"), f"Error processing legislative election data: {e}")
 
@@ -202,7 +215,7 @@ def main():
                 handle_legi_output()
                 break
             else:
-                print(colored_text("[HUGENOTE]:", "blue"), "Sorry, only 'legi' (legislative elections) is currently supported.")
+                print(colored_text("[HUGENOTE]:", "red"), "Sorry, only 'legi' (legislative elections) is currently supported.")
             
     except KeyboardInterrupt:
         print(f"\n{colored_text('[HUGENOTE]:', 'green')} Program terminated by user.")
