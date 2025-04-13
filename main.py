@@ -332,12 +332,12 @@ def handle_legi_input():
                 print(colored_text("[HUGENOTE]:", "red"), "You must choose between option 1, 2 and 3.")
                 continue
             if visual_input == '1':
-                round_choice = hugenote_prompt("Which round? (1, 2, both)")
+                round_choice = hugenote_prompt("Which round? (1 or 2)")
                 if round_choice == '1':
-                    create_results_chart(filtered_data_turn1)
+                    create_single_results_chart(filtered_data_turn1)
                     break
                 elif round_choice == '2':
-                    create_results_chart(filtered_data_turn2)
+                    create_single_results_chart(filtered_data_turn2)
                     break
                 else:
                     print(colored_text("[HUGENOTE]:", "red"), "Invalid round selection.")
