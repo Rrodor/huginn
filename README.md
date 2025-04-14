@@ -1,0 +1,5 @@
+- Gestion d'erreur,
+- gestion des années,
+- ajout de toutes les legislatives,
+- visualisation,
+- gérer la nomenclature des fichiers,

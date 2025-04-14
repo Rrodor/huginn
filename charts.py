@@ -119,8 +119,8 @@ def create_group_results_chart_V2(round1_data, round2_data):
             colors_r2.append('red')
             colors_r1.append('green')
 
-    print(colors_r1)
-    print(colors_r2)
+    # print(colors_r1)
+    # print(colors_r2)
     # CREATE CHART
     # Bar volume
     x = np.arange(len(labels))
