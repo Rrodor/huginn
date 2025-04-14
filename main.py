@@ -1,7 +1,7 @@
 from get_data_gouv import get_data_from_gouv
 from Candidat import Candidat
 from utils import colored_text, hugenote_prompt
-from charts import create_single_results_chart, create_group_results_chart, create_turnout_comparison_chart
+from charts import create_single_results_chart, create_group_results_chart, create_group_results_chart_V2, create_turnout_comparison_chart
 import pandas as pd
 import shutil
 import load_csv
@@ -48,7 +48,7 @@ def get_value_from_df(row, column_name, default=0):
 
 
 def process_election_data(departement_code, district_code, dataframe):
-    
+
     # RESULT STRUCTURE
     result = {
         'found': False,
@@ -67,20 +67,20 @@ def process_election_data(departement_code, district_code, dataframe):
             'is_1981_format': False
         }
     }
-    
+
     try:
         # FILTER
         district_nb = int(district_code)
         departement_nb = int(departement_code)
         filtered_df = None
-        
+
         # CHECK COMPATIBILITY
         filter_attempts = [
             lambda df: df[(df['Code département'] == departement_nb) & (df['circonscription'] == district_nb)],
             lambda df: df[(df['Code département'] == str(departement_nb)) & (df['circonscription'] == str(district_nb))],
             lambda df: df[(df['Code département'] == str(departement_nb)) & (df['circonscription'] == district_nb)],
             lambda df: df[(df['Code département'] == departement_nb) & (df['circonscription'] == str(district_nb))]]
-        
+
         for filter_attempt in filter_attempts:
             try:
                 filtered_result = filter_attempt(dataframe)
@@ -89,23 +89,23 @@ def process_election_data(departement_code, district_code, dataframe):
                     break
             except Exception:
                 continue
-        
+
         # STATE
         if filtered_df is None or filtered_df.empty:
             return result
         result['found'] = True
-        
+
         # DISTRICT ROW
         row = filtered_df.iloc[0]
-        
+
         # DETERMINE FORMAT 'BEFORE 1981' OR 'AFTER 1981'
         result['metadata']['is_1981_format'] = any('1 voix' in col for col in filtered_df.columns)
-        
+
         # GET REMAINING STATISTICS
         total_registered = get_value_from_df(row, 'Inscrits')
         total_voters = get_value_from_df(row, 'Votants')
         valid_votes = get_value_from_df(row, 'Exprimés')
-        
+
         # OPTIONNAL : WHITE / CANCELED VOTES
         possible_blank_columns = ['Blancs et nuls', 'Blancs', 'Nuls']
         blank_void = 0
@@ -113,13 +113,13 @@ def process_election_data(departement_code, district_code, dataframe):
             if col in row:
                 blank_void = get_value_from_df(row, col)
                 break
-        
+
         # GET CUSTOM PERCENTAGES
         turnout_pct = (total_voters / total_registered * 100) if total_registered > 0 else 0
         abstention_pct = 100 - turnout_pct
         blank_void_pct = (blank_void / total_voters * 100) if total_voters > 0 else 0
         valid_votes_pct = (valid_votes / total_voters * 100) if total_voters > 0 else 0
-        
+
         # PARTICIPATION STRUCTURE
         result['participation'] = {
             'registered': int(total_registered),
@@ -130,19 +130,19 @@ def process_election_data(departement_code, district_code, dataframe):
             'abstention_pct': abstention_pct,
             'blank_void_pct': blank_void_pct,
             'valid_votes_pct': valid_votes_pct}
-        
+
         # EXCLUDE TO PROCESS ONLY PARTY RESULT
         always_excluded = [
             'Code département', 'département', 'circonscription',
-            'élu premier tour', 'Inscrits', 'Votants', 'Exprimés', 
+            'élu premier tour', 'Inscrits', 'Votants', 'Exprimés',
             'Blancs et nuls', 'Blancs', 'Nuls', '']
         excluded_columns = set()
         for col in always_excluded:
             if col in filtered_df.columns:
                 excluded_columns.add(col)
-        
+
         party_results = []
-        
+
         # PROCESS RESULT DEPENDING ON CSV FORMAT (1958 OR 1981)
         if result['metadata']['is_1981_format']:
             # POST 1981
@@ -152,10 +152,10 @@ def process_election_data(departement_code, district_code, dataframe):
                 party_col = f"{candidate_num} nuance"
                 name_col = f"{candidate_num} Nom candidat"
                 firstname_col = f"{candidate_num} Prénom candidat"
-                
+
                 if voix_col not in row or pd.isna(row[voix_col]):
                     break
-                    
+
                 try:
                     votes = pd.to_numeric(row[voix_col], errors='coerce')
                     party = row[party_col] if pd.notna(row[party_col]) else "Unknown"
@@ -192,37 +192,37 @@ def process_election_data(departement_code, district_code, dataframe):
                             })
                     except (ValueError, TypeError):
                         pass
-        
+
         # SORT VOTES
         party_results.sort(key=lambda x: x['votes'], reverse=True)
         result['party_results'] = party_results
-        
+
         # Get election status if available
         # if 'élu premier tour' in row:
         #     status_value = get_value_from_df(row, 'élu premier tour')
         #     elected_first_round = None
-            
+
         #     if status_value in ['O', 'OUI', 'Y', 'YES', True, 1]:
         #         elected_first_round = True
         #     elif status_value in ['N', 'NON', 'N', 'NO', False, 0]:
         #         elected_first_round = False
-                
+
         #     result['metadata']['elected_first_round'] = elected_first_round
-            
+
     except Exception as e:
         result['metadata']['error'] = str(e)
-        
+
     return result
 
 def display_round_data(departement_code, district_code, current_dataframe):
-    
+
     # FILTER DATA
     result = process_election_data(departement_code, district_code, current_dataframe)
     if not result['found']:
-        print(colored_text("[HUGENOTE]:", "red"), 
+        print(colored_text("[HUGENOTE]:", "red"),
               f"No results found for: departement({departement_code}), district({district_code}).")
         return result
-    
+
     # DISPLAY STATISTICS
     participation = result['participation']
     print("-" * 50)
@@ -234,7 +234,7 @@ def display_round_data(departement_code, district_code, current_dataframe):
     print(f"Blank/void ballots:   {participation['blank_void']:,} ({participation['blank_void_pct']:.1f}%)")
     print(f"Valid votes:          {participation['valid_votes']:,} ({participation['valid_votes_pct']:.1f}%)")
     print("-" * 50)
-    
+
     # DISPLAY POLITICAL PARTY RESULTS
     print(colored_text("POLITICAL PARTY RESULTS", "green"))
     print("-" * 50)
@@ -247,9 +247,9 @@ def display_round_data(departement_code, district_code, current_dataframe):
                 print(f"{party['display_name']:<25}: {party['votes']:,} votes ({party['percentage']:.1f}%) - LEADING")
             else:
                 print(f"{party['display_name']:<25}: {party['votes']:,} votes ({party['percentage']:.1f}%)")
-    
+
     print("-" * 50)
-        
+
     return result
 
 #===========================================================#
@@ -297,20 +297,20 @@ def handle_legi_input():
                 if not departement_input:
                     print(colored_text("[HUGENOTE]:", "red"), "Department number cannot be empty.")
                     continue
-                
+
                 if not (departement_input.isdigit() or (departement_input.startswith('0') and departement_input[1:].isdigit())):
                     print(colored_text("[HUGENOTE]:", "red"), "Department must be a number.")
                     continue
-                    
+
                 district_input = hugenote_prompt("Which district? (example: 1, 3, 11)")
                 if not district_input:
                     print(colored_text("[HUGENOTE]:", "red"), "District number cannot be empty.")
                     continue
-                    
+
                 if not district_input.isdigit():
                     print(colored_text("[HUGENOTE]:", "red"), "District must be a number.")
                     continue
-                
+
                 break
             except Exception as e:
                 print(colored_text("[HUGENOTE]:", "red"), f"Input error: {e}. Please try again.")
@@ -323,7 +323,7 @@ def handle_legi_input():
         filtered_data_turn2 = display_round_data(departement_input, district_input, second_round_df)
         if not filtered_data_turn1['found'] or not filtered_data_turn2['found']:
             print(colored_text("[HUGENOTE]:", "red"), "Data for one or both rounds not found. Exiting program.")
-            sys.exit(1) 
+            sys.exit(1)
 
         while True:
             print()
@@ -343,12 +343,12 @@ def handle_legi_input():
                     print(colored_text("[HUGENOTE]:", "red"), "Invalid round selection.")
                     continue
             if visual_input == '2':
-                create_group_results_chart(filtered_data_turn1, filtered_data_turn2)
+                create_group_results_chart_V2(filtered_data_turn1, filtered_data_turn2)
                 break
             if visual_input == '3':
                 create_turnout_comparison_chart(filtered_data_turn1, filtered_data_turn2)
                 break
-            
+
     except Exception as e:
         print(colored_text("\n[HUGENOTE]:", "red"), f"Error processing legislative election data: {e}")
 
@@ -366,7 +366,7 @@ def main():
     try:
         # DISPLAY HEADER AN INTRODUCTION
         display_header()
-        
+
         # REMOVE PREVIOUS DATA
         erase_data()
 
@@ -379,7 +379,7 @@ def main():
                 break
             else:
                 print(colored_text("[HUGENOTE]:", "red"), "Sorry, only 'parliament' is currently supported.")
-            
+
     except KeyboardInterrupt:
         print(f"\n{colored_text('[HUGENOTE]:', 'green')} Program terminated by user.")
         erase_data()
